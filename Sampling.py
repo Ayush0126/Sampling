@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.utils import resample
@@ -52,11 +52,12 @@ def stratified_sampling(X, y, sample_size):
 
 # 4. Cluster Sampling
 def cluster_sampling(data, n_clusters=5):
-    # Create artificial clusters based on features
     data["Cluster"] = data["Amount"] // (data["Amount"].max() / n_clusters)
     sampled_clusters = data["Cluster"].sample(n_clusters, random_state=42)
     sampled_data = data[data["Cluster"].isin(sampled_clusters)]
-    return sampled_data.drop("Cluster", axis=1)
+    X_sampled = sampled_data.drop(["Class", "Cluster"], axis=1)  # Drop 'Cluster' to avoid mismatch
+    y_sampled = sampled_data["Class"]
+    return X_sampled, y_sampled
 
 # 5. Bootstrap Sampling
 def bootstrap_sampling(X, y, n_samples=None):
@@ -82,85 +83,73 @@ def undersampling(X, y):
     return downsampled_data.drop("Class", axis=1), downsampled_data["Class"]
 
 # ----------------------------
-# Experiment Setup
-# ----------------------------
-
-# Sample size and step size for sampling
-sample_size = 0.2
-step_size = 10  # for systematic sampling
-
-# Generate sampled datasets
-X_simple, y_simple = simple_random_sampling(X, y, sample_size)
-X_systematic, y_systematic = systematic_sampling(X, y, step_size)
-X_stratified, y_stratified = stratified_sampling(X, y, sample_size)
-clustered_data = cluster_sampling(data, n_clusters=10)  # Increase clusters if needed
-X_clustered = clustered_data.drop("Class", axis=1)
-y_clustered = clustered_data["Class"]
-
-X_bootstrap, y_bootstrap = bootstrap_sampling(X, y, n_samples=int(len(y) * sample_size))
-X_smote, y_smote = smote_oversampling(X, y)
-X_undersampled, y_undersampled = undersampling(X, y)
-
-# ----------------------------
 # Models and Evaluation
 # ----------------------------
 
-# General function for model evaluation
-# Updated evaluation function with class validation
+# Define models
+models = {
+    "Decision Tree": DecisionTreeClassifier(random_state=42),
+    "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
+    "Random Forest": RandomForestClassifier(random_state=42),
+    "SVM": SVC(random_state=42),
+    "Gradient Boosting": GradientBoostingClassifier(random_state=42),
+}
+
+# Evaluate function
 def evaluate_model(model, X_train, y_train, X_test, y_test):
-    # Check if y_train contains at least two classes
-    if len(np.unique(y_train)) < 2:
+    if len(np.unique(y_train)) < 2:  # Handle single-class data
         return "Single class data"
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     return accuracy_score(y_test, y_pred)
 
-# Train-test split for evaluation
+# Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-# Store accuracy and rankings
+
+# Sampling methods
+sampling_methods = {
+    "Simple Random": lambda: simple_random_sampling(X, y, sample_size=0.2),
+    "Systematic": lambda: systematic_sampling(X, y, step=10),
+    "Stratified": lambda: stratified_sampling(X, y, sample_size=0.2),
+    "Clustered": lambda: cluster_sampling(data, n_clusters=5),
+    "Bootstrap": lambda: bootstrap_sampling(X, y, n_samples=int(len(y) * 0.2)),
+    "SMOTE": lambda: smote_oversampling(X, y),
+    "Undersampling": lambda: undersampling(X, y),
+}
+
+# Store results
 detailed_results = {}
 
-# Evaluate models on all sampling methods
-for method, (X_sampled, y_sampled) in {
-    "Simple Random": (X_simple, y_simple),
-    "Systematic": (X_systematic, y_systematic),
-    "Stratified": (X_stratified, y_stratified),
-    "Clustered": (X_clustered, y_clustered),
-    "Bootstrap": (X_bootstrap, y_bootstrap),
-    "SMOTE": (X_smote, y_smote),
-    "Undersampling": (X_undersampled, y_undersampled),
-}.items():
+# Evaluate each model on each sampling method
+for method, sampler in sampling_methods.items():
+    X_sampled, y_sampled = sampler()
     detailed_results[method] = {}
     for model_name, model in models.items():
-        # Evaluate the model and handle single-class cases
         accuracy = evaluate_model(model, X_sampled, y_sampled, X_test, y_test)
         detailed_results[method][model_name] = accuracy
 
-# Calculate rankings for each sampling method
-rankings = {}
-for method, model_results in detailed_results.items():
-    valid_results = {model: acc for model, acc in model_results.items() if isinstance(acc, (float, int))}
-    ranked_models = sorted(valid_results.items(), key=lambda x: x[1], reverse=True)
-    rankings[method] = [f"{rank + 1}. {model}: {accuracy:.4f}" for rank, (model, accuracy) in enumerate(ranked_models)]
+# Convert results to a DataFrame for easier manipulation
+results_df = pd.DataFrame(detailed_results)
 
-# Write detailed results and rankings to output.txt
-output_file = "/kaggle/working/output.txt"
-with open(output_file, "w") as file:
-    # Write accuracy results
-    file.write("Detailed Accuracy Results:\n")
-    for method, model_results in detailed_results.items():
-        file.write(f"\n{method} Sampling:\n")
-        for model_name, accuracy in model_results.items():
-            if isinstance(accuracy, str):
-                file.write(f"  {model_name}: {accuracy}\n")
-            else:
-                file.write(f"  {model_name}: {accuracy:.4f}\n")
+# ----------------------------
+# Write Results to output.txt
+# ----------------------------
+with open("/kaggle/working/output.txt", "w") as file:
+    # Write detailed results
+    file.write("Detailed Accuracy Results (Model vs Sampling Methods):\n")
+    file.write(results_df.to_string(index=True))
+    file.write("\n\n")
 
-    # Write model rankings
-    file.write("\nModel Rankings by Sampling Method:\n")
-    for method, ranked_list in rankings.items():
-        file.write(f"\n{method} Sampling Rankings:\n")
-        for rank in ranked_list:
-            file.write(f"  {rank}\n")
+    # Write rankings for each sampling method
+    file.write("Model Rankings by Sampling Method:\n")
+    for method in detailed_results.keys():
+        file.write(f"\n{method} Rankings:\n")
+        sorted_models = sorted(
+            detailed_results[method].items(),
+            key=lambda x: x[1] if isinstance(x[1], float) else 0,
+            reverse=True,
+        )
+        for rank, (model_name, accuracy) in enumerate(sorted_models, start=1):
+            file.write(f"  {rank}. {model_name}: {accuracy}\n")
 
-print(f"Results and rankings have been written to {output_file}")
+print("Results have been written to output.txt.")
