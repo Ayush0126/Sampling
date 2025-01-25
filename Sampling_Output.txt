@@ -1,0 +1,58 @@
+Detailed Accuracy Results (Model vs Sampling Methods):
+                     Simple Random  Systematic  Stratified  Clustered  Bootstrap     SMOTE  Undersampling
+Decision Tree             0.943966    0.982759    0.991379   1.000000   0.978448  1.000000       0.810345
+Logistic Regression       0.987069    0.982759    0.978448   0.987069   0.982759  0.909483       0.599138
+Random Forest             0.987069    0.987069    0.991379   1.000000   0.987069  1.000000       0.750000
+SVM                       0.987069    0.987069    0.987069   0.987069   0.987069  0.676724       0.659483
+Gradient Boosting         0.961207    0.982759    0.991379   1.000000   0.978448  1.000000       0.827586
+
+Model Rankings by Sampling Method:
+
+Simple Random Rankings:
+  1. Logistic Regression: 0.9870689655172413
+  2. Random Forest: 0.9870689655172413
+  3. SVM: 0.9870689655172413
+  4. Gradient Boosting: 0.9612068965517241
+  5. Decision Tree: 0.9439655172413793
+
+Systematic Rankings:
+  1. Random Forest: 0.9870689655172413
+  2. SVM: 0.9870689655172413
+  3. Decision Tree: 0.9827586206896551
+  4. Logistic Regression: 0.9827586206896551
+  5. Gradient Boosting: 0.9827586206896551
+
+Stratified Rankings:
+  1. Decision Tree: 0.9913793103448276
+  2. Random Forest: 0.9913793103448276
+  3. Gradient Boosting: 0.9913793103448276
+  4. SVM: 0.9870689655172413
+  5. Logistic Regression: 0.978448275862069
+
+Clustered Rankings:
+  1. Decision Tree: 1.0
+  2. Random Forest: 1.0
+  3. Gradient Boosting: 1.0
+  4. Logistic Regression: 0.9870689655172413
+  5. SVM: 0.9870689655172413
+
+Bootstrap Rankings:
+  1. Random Forest: 0.9870689655172413
+  2. SVM: 0.9870689655172413
+  3. Logistic Regression: 0.9827586206896551
+  4. Decision Tree: 0.978448275862069
+  5. Gradient Boosting: 0.978448275862069
+
+SMOTE Rankings:
+  1. Decision Tree: 1.0
+  2. Random Forest: 1.0
+  3. Gradient Boosting: 1.0
+  4. Logistic Regression: 0.9094827586206896
+  5. SVM: 0.6767241379310345
+
+Undersampling Rankings:
+  1. Gradient Boosting: 0.8275862068965517
+  2. Decision Tree: 0.8103448275862069
+  3. Random Forest: 0.75
+  4. SVM: 0.6594827586206896
+  5. Logistic Regression: 0.5991379310344828
